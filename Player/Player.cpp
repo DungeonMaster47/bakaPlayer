@@ -13,7 +13,6 @@ Player::Player(HWND hwnd) :
 	m_pWindow(NULL),
 	m_pVideo(NULL),
 	m_pAudio(NULL),
-	m_pMediaType(NULL),
 	m_bSaveAspectRatio(true)
 {
 }
@@ -115,18 +114,23 @@ HRESULT Player::OpenFile(TCHAR* szFileName)
 		return hr;
 	}
 
+	m_pGraph->RenderFile(szFileName, NULL);
+	if (FAILED(hr))
+	{
+		return hr;
+	}
 
-	//m_pGraph->RenderFile(szFileName, NULL);
-	hr = m_pGraphBuilder->RenderStream(0, 0, pSource, 0, pVmr);
+	/*hr = m_pGraphBuilder->RenderStream(0, 0, pSource, 0, pVmr);
 	if (FAILED(hr))
 	{
 		return hr;
-	}
-	hr = m_pGraphBuilder->RenderStream(0, &MEDIATYPE_Audio, pSource, 0, NULL);
+	}*/
+	/*hr = m_pGraphBuilder->RenderStream(0, &MEDIATYPE_Audio, pSource, 0, NULL);
 	if (FAILED(hr))
 	{
 		return hr;
-	}
+	}*/
+
 
 	hr = m_pGraph->QueryInterface(IID_PPV_ARGS(&m_pVideo));
 	if (FAILED(hr))
@@ -203,11 +207,6 @@ void Player::ReleaseGraph()
 {
 	Stop();
 
-	if (m_pMediaType)
-	{
-		m_pMediaType->Release();
-		m_pMediaType = nullptr;
-	}
 	if (m_pEvent)
 	{
 		m_pEvent->SetNotifyWindow((OAHWND)NULL, NULL, NULL);
@@ -358,11 +357,26 @@ LONGLONG Player::GetTime()
 
 void Player::SetPos(LONGLONG pos)
 {
-	if (m_state == STATE_NO_GRAPH)
+	if (m_state == STATE_NO_GRAPH || m_state == STATE_STOPPED)
 		return;
 	pos *= ONE_SECOND;
+	if (pos < 0)
+	{
+		pos = 0;
+		m_pSeek->SetPositions(&pos, AM_SEEKING_AbsolutePositioning, NULL, AM_SEEKING_NoPositioning);
+		return;
+	}
+	LONGLONG duration;
+	m_pSeek->GetDuration(&duration);
+	if (pos > duration)
+	{
+		m_pSeek->SetPositions(&duration, AM_SEEKING_AbsolutePositioning, NULL, AM_SEEKING_NoPositioning);
+		return;
+	}
+
 	m_pSeek->SetPositions(&pos, AM_SEEKING_AbsolutePositioning, NULL, AM_SEEKING_NoPositioning);
 }
+
 
 HRESULT Player::InitCaptureGraphBuilder()
 {

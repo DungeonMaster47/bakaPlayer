@@ -34,7 +34,6 @@ private:
 	IVideoWindow*  m_pWindow;
 	IBasicVideo*   m_pVideo;
 	IBasicAudio*   m_pAudio;
-	IMediaTypeInfo* m_pMediaType;
 	void		   ReleaseGraph();
 	HRESULT		   InitializeGraph();
 	bool		   m_bSaveAspectRatio;

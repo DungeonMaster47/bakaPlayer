@@ -2,7 +2,6 @@
 #include "MainWindow.h"
 #include "Player.h"
 
-//static bool g_bMouseTrack = false;
 static HINSTANCE g_hInst = NULL;
 static Player*	 g_pPlayer = NULL;
 static HMENU	 g_hMenu = NULL;
@@ -41,7 +40,7 @@ int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE hPrevInstance, _In
 	wcex.hInstance = hInstance;
 	wcex.hIcon = LoadIcon(hInstance, IDI_APPLICATION);
 	wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 3);
 	wcex.lpszMenuName = NULL;
 	wcex.lpszClassName = szWindowClass;
 	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_ICON1));
@@ -50,7 +49,7 @@ int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE hPrevInstance, _In
 	{
 		MessageBox(NULL,
 			_T("Call to RegisterClass failed!"),
-			_T("Windows Desktop Guided Tour"),
+			_T("Error"),
 			NULL);
 
 		return 1;
@@ -88,12 +87,61 @@ LRESULT CALLBACK WndProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In
 	switch (uMsg) {
 	case WM_CREATE:
 	{
+		PROCESS_INFORMATION pi = { };
+		STARTUPINFO si = { };
+		si.cb = sizeof(si);
+		si.wShowWindow = SW_HIDE;
+		TCHAR cmd[] = _T("regsvr32.exe /s mp4demux.dll");
+		DWORD res = CreateProcess(NULL, cmd, NULL, NULL, FALSE, FALSE, NULL, NULL, &si, &pi);
+		res = WaitForSingleObject(pi.hProcess, 10000);
+		if (res == WAIT_TIMEOUT)
+		{
+			MessageBox(hWnd, _T("Cannot register mp4 filter"), _T("Error"), MB_ICONERROR);
+		}
 		g_hMenu = CreateMenu();
 		g_hPopupMenu = CreatePopupMenu();
 		MenuInit(g_hMenu, g_hPopupMenu);
 		SetMenu(hWnd, g_hMenu);
 		g_pPlayer = new Player(hWnd);
+		SetFocus(hWnd);
 		return 0;
+	}
+	case WM_DROPFILES: 
+	{
+		TCHAR filename[MAX_PATH];
+		DragQueryFile((HDROP)wParam, NULL, filename, MAX_PATH);
+		HRESULT hr;
+		hr = g_pPlayer->OpenFile(filename);
+		InvalidateRect(hWnd, NULL, FALSE);
+		if (SUCCEEDED(hr))
+		{
+			OnSize(hWnd);
+		}
+		else
+		{
+			MessageBox(hWnd, _T("Cannot open this file."), _T("Error"), MB_ICONERROR);
+		}
+		DragFinish((HDROP)wParam);
+		SetFocus(hWnd);
+	}
+	case WM_KEYDOWN:
+	{
+		switch (wParam)
+		{
+		case VK_RIGHT:
+		{
+			LONGLONG pos = g_pPlayer->GetTime();
+			g_pPlayer->SetPos(pos + 5);
+			return 0;
+		}
+		case VK_LEFT:
+		{
+			LONGLONG pos = g_pPlayer->GetTime();
+			g_pPlayer->SetPos(pos - 5);
+			return 0;
+		}
+		}
+		break;
 	}
 	case WM_CHAR:
 	{
@@ -116,6 +164,17 @@ LRESULT CALLBACK WndProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In
 		DestroyWindow(g_hTrackbar);
 		CoUninitialize();
 		delete g_pPlayer;
+		PROCESS_INFORMATION pi = { };
+		STARTUPINFO si = { };
+		si.cb = sizeof(si);
+		si.wShowWindow = SW_HIDE;
+		TCHAR cmd[] = _T("regsvr32.exe /s /u mp4demux.dll");
+		DWORD res = CreateProcess(NULL, cmd, NULL, NULL, FALSE, FALSE, NULL, NULL, &si, &pi);
+		res = WaitForSingleObject(pi.hProcess, 10000);
+		if (res == WAIT_TIMEOUT)
+		{
+			MessageBox(hWnd, _T("Cannot deregister mp4 filter"), _T("Error"), MB_ICONERROR);
+		}
 		PostQuitMessage(0);
 		return 0;
 	}
@@ -276,7 +335,6 @@ void OnChar(HWND hwnd, TCHAR c)
 	case _T(' '):
 		if (g_pPlayer->State() == STATE_RUNNING)
 		{
-			KillTimer(hwnd, IDT_TIMER);
 			g_pPlayer->Pause();
 		}
 		else
@@ -342,6 +400,9 @@ void OnSize(HWND hwnd)
 
 void OnOpenFile(HWND hWnd)
 {
+	TCHAR path[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, path);
+
 	OPENFILENAME ofn = { };
 	TCHAR szFileName[MAX_PATH];
 	szFileName[0] = L'\0';
@@ -362,19 +423,15 @@ void OnOpenFile(HWND hWnd)
 		if (SUCCEEDED(hr))
 		{
 			OnSize(hWnd);
-			if (g_hTrackbar != NULL)
-			{
-				EnableWindow(g_hTrackbar, FALSE);
-				DestroyWindow(g_hTrackbar);
-				g_hTrackbar = NULL;
-			}
-			g_hTrackbar = CreateTrackbar(hWnd, 0, g_pPlayer->GetDuration());
 		}
 		else
 		{
 			MessageBox(hWnd, _T("Cannot open this file."), _T("Error"), MB_ICONERROR);
 		}
 	}
+
+	SetCurrentDirectory(path);
+	SetFocus(hWnd);
 }
 
 
