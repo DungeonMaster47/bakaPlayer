@@ -3,12 +3,14 @@
 #include <dshow.h>
 #include <d3d9.h>
 #include <vmr9.h>
+#include <math.h>
 #include "MainWindow.h"
 #pragma comment(lib, "Quartz.lib")
 #pragma comment(lib, "strmiids.lib")
 #define WM_GRAPH_EVENT WM_APP+1
 
 #define ONE_SECOND 10000000
+#define MIN_VOLUME -10000
 
 enum PlaybackState
 {
@@ -34,6 +36,7 @@ private:
 	IVideoWindow*  m_pWindow;
 	IBasicVideo*   m_pVideo;
 	IBasicAudio*   m_pAudio;
+	size_t		   m_volumeLevel;
 	void		   ReleaseGraph();
 	HRESULT		   InitializeGraph();
 	bool		   m_bSaveAspectRatio;
@@ -53,5 +56,7 @@ public:
 	LONGLONG	GetDuration();
 	LONGLONG    GetTime();
 	void		SetPos(LONGLONG pos);
+	void SetVolumeLevel(size_t volumeLevel);
+	size_t GetVolumeLevel();
 };
 

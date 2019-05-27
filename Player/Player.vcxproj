@@ -158,7 +158,13 @@
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="res\back.ico" />
+    <Image Include="res\forward.ico" />
     <Image Include="res\icon.ico" />
+    <Image Include="res\novolume.ico" />
+    <Image Include="res\play.ico" />
+    <Image Include="res\stop.ico" />
+    <Image Include="res\volume.ico" />
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="bakaPlayer.exe.manifest" />

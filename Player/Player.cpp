@@ -13,7 +13,8 @@ Player::Player(HWND hwnd) :
 	m_pWindow(NULL),
 	m_pVideo(NULL),
 	m_pAudio(NULL),
-	m_bSaveAspectRatio(true)
+	m_bSaveAspectRatio(true),
+	m_volumeLevel(100)
 {
 }
 
@@ -36,6 +37,9 @@ HRESULT Player::Play()
 	{
 		return 0;
 	}
+
+	SetVolumeLevel(m_volumeLevel);
+
 	if (m_state == STATE_STOPPED)
 	{
 		LONGLONG current = 0;
@@ -108,6 +112,12 @@ HRESULT Player::OpenFile(TCHAR* szFileName)
 		return hr;
 	}
 
+	IVMRAspectRatioControl9* pARControl = NULL;
+
+	pVmr->QueryInterface(IID_PPV_ARGS(&pARControl));
+
+	pARControl->SetAspectRatioMode(VMR_ARMODE_NONE);
+	
 	hr = m_pGraph->AddFilter(pVmr, L"VMR9");
 	if (FAILED(hr))
 	{
@@ -119,7 +129,6 @@ HRESULT Player::OpenFile(TCHAR* szFileName)
 	{
 		return hr;
 	}
-
 	/*hr = m_pGraphBuilder->RenderStream(0, 0, pSource, 0, pVmr);
 	if (FAILED(hr))
 	{
@@ -146,11 +155,13 @@ HRESULT Player::OpenFile(TCHAR* szFileName)
 
 	hr = m_pWindow->put_Owner((OAHWND)m_hwnd);
 
+	m_pWindow->put_MessageDrain((OAHWND)m_hwnd);
+
 	hr = m_pWindow->put_WindowStyle(WS_CHILD | WS_CLIPSIBLINGS);
 
 	RECT rc;
 	GetClientRect(m_hwnd, &rc);
-	hr = m_pWindow->SetWindowPosition(0, 0, rc.right, (rc.bottom-TRACKBAR_SIZE));
+	hr = m_pWindow->SetWindowPosition(0, 0, rc.right, (rc.bottom-TRACKBAR_HEIGHT));
 
 	m_state = STATE_STOPPED;
 
@@ -302,17 +313,17 @@ HRESULT Player::UpdateVideoWindow(RECT rc)
 		long width;
 		long height;
 		m_pVideo->GetVideoSize(&width, &height);
-		if ((double)rc.right / (double)width < (double)(rc.bottom-TRACKBAR_SIZE) / (double)height)
+		if ((double)rc.right / (double)width < (double)(rc.bottom) / (double)height)
 		{
-			m_pWindow->SetWindowPosition(0, (rc.bottom-TRACKBAR_SIZE)/2.0 - ((double)height *((double)rc.right / (double)width))/2.0, (double)width * ((double)rc.right / (double)width), (double)height *((double)rc.right / (double)width));
+			m_pWindow->SetWindowPosition(0, (rc.bottom)/2.0 - ((double)height *((double)rc.right / (double)width))/2.0, (double)width * ((double)rc.right / (double)width), (double)height *((double)rc.right / (double)width));
 		}
 		else
 		{
-			m_pWindow->SetWindowPosition(rc.right/2.0-(((double)width * ((double)(rc.bottom-TRACKBAR_SIZE) / height)) / 2.0), 0, (double)width * ((double)(rc.bottom-TRACKBAR_SIZE) / (double)height), (double)height * ((double)(rc.bottom-TRACKBAR_SIZE) / (double)height));
+			m_pWindow->SetWindowPosition(rc.right/2.0-(((double)width * ((double)(rc.bottom) / height)) / 2.0), 0, (double)width * ((double)(rc.bottom) / (double)height), (double)height * ((double)(rc.bottom) / (double)height));
 		}
 	}
 	else
-		m_pWindow->SetWindowPosition(0, 0, rc.right, (rc.bottom-TRACKBAR_SIZE));
+		m_pWindow->SetWindowPosition(0, 0, rc.right, rc.bottom);
 
 	return 1;
 }
@@ -325,6 +336,7 @@ void Player::ChangeSaveAspectRatio()
 	{
 		RECT rc;
 		GetClientRect(m_hwnd, &rc);
+		rc.bottom -= TRACKBAR_HEIGHT;
 		UpdateVideoWindow(rc);
 	}
 }
@@ -400,4 +412,23 @@ HRESULT Player::InitCaptureGraphBuilder()
 		}
 	}
 	return hr;
+}
+
+
+void Player::SetVolumeLevel(size_t volumeLevel)
+{
+	if (volumeLevel > 100)
+		m_volumeLevel = 100;
+	else if (volumeLevel < 0)
+		m_volumeLevel = 0;
+	else
+		m_volumeLevel = volumeLevel;
+	if (m_pAudio)
+		m_pAudio->put_Volume(-pow(10000.0, 1.0-(m_volumeLevel / 100.0)));
+}
+
+
+size_t Player::GetVolumeLevel()
+{
+	return m_volumeLevel;
 }

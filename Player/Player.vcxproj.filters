@@ -40,6 +40,24 @@
     <Image Include="res\icon.ico">
       <Filter>Файлы ресурсов</Filter>
     </Image>
+    <Image Include="res\back.ico">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
+    <Image Include="res\forward.ico">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
+    <Image Include="res\novolume.ico">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
+    <Image Include="res\play.ico">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
+    <Image Include="res\stop.ico">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
+    <Image Include="res\volume.ico">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="bakaPlayer.exe.manifest">
