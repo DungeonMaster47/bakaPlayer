@@ -124,7 +124,7 @@ HRESULT Player::OpenFile(TCHAR* szFileName)
 		return hr;
 	}
 
-	m_pGraph->RenderFile(szFileName, NULL);
+	hr = m_pGraph->RenderFile(szFileName, NULL);
 	if (FAILED(hr))
 	{
 		return hr;
